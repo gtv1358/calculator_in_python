@@ -1,58 +1,100 @@
-def add(a, b):
-    return a + b
+import tkinter as tk
+from tkinter import messagebox
+import math
 
-def subtract(a, b):
-    return a - b
+class Calculator:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Enhanced Python Calculator")
+        self.root.geometry("400x500")
+        self.root.resizable(False, False)
+        self.expression = ""
+        self.history = []
 
-def multiply(a, b):
-    return a * b
+        # Display
+        self.entry = tk.Entry(root, font=("Arial", 24), borderwidth=2, relief="ridge")
+        self.entry.pack(fill="both", ipadx=8, pady=10, padx=10)
 
-def divide(a, b):
-    if b == 0:
-        print("Error: Division by zero!")
-        return None
-    return a / b
+        # Buttons frame
+        btns_frame = tk.Frame(root)
+        btns_frame.pack()
 
-def calculator():
-    print("Welcome to the Python Calculator!")
-    print("You can perform addition, subtraction, multiplication, and division.\n")
-    
-    while True:
+        buttons = [
+            ['7','8','9','/','√'],
+            ['4','5','6','*','!'],
+            ['1','2','3','-','^'],
+            ['0','.','%','+','//'],
+            ['C','History','=','Exit']
+        ]
+
+        for r, row in enumerate(buttons):
+            row_frame = tk.Frame(btns_frame)
+            row_frame.pack(expand=True, fill="both")
+            for c, btn_text in enumerate(row):
+                btn = tk.Button(row_frame, text=btn_text, font=("Arial", 18), width=6, height=2,
+                                command=lambda x=btn_text: self.on_click(x))
+                btn.grid(row=r, column=c, sticky="nsew", padx=2, pady=2)
+
+        # Adjust grid weight
+        for i in range(5):
+            btns_frame.rowconfigure(i, weight=1)
+            btns_frame.columnconfigure(i, weight=1)
+
+    def on_click(self, char):
+        if char == 'C':
+            self.expression = ""
+            self.entry.delete(0, tk.END)
+        elif char == '=':
+            self.calculate()
+        elif char == 'History':
+            self.show_history()
+        elif char == 'Exit':
+            self.root.quit()
+        elif char in ['√','!']:
+            self.expression += char
+            self.entry.insert(tk.END, char)
+        else:
+            self.expression += str(char)
+            self.entry.insert(tk.END, str(char))
+
+    def calculate(self):
         try:
-            num1 = float(input("Enter the first number: "))
-            num2 = float(input("Enter the second number: "))
-            
-            print("\nSelect operation:")
-            print("1. Addition (+)")
-            print("2. Subtraction (-)")
-            print("3. Multiplication (*)")
-            print("4. Division (/)")
-            
-            choice = input("Enter your choice (1/2/3/4): ")
-            
-            if choice == '1':
-                result = add(num1, num2)
-                print(f"Result: {num1} + {num2} = {result}")
-            elif choice == '2':
-                result = subtract(num1, num2)
-                print(f"Result: {num1} - {num2} = {result}")
-            elif choice == '3':
-                result = multiply(num1, num2)
-                print(f"Result: {num1} * {num2} = {result}")
-            elif choice == '4':
-                result = divide(num1, num2)
-                if result is not None:
-                    print(f"Result: {num1} / {num2} = {result}")
-            else:
-                print("Invalid choice. Please select 1, 2, 3, or 4.")
-            
-        except ValueError:
-            print("Invalid input. Please enter numeric values.")
-        
-        again = input("\nDo you want to perform another calculation? (y/n): ")
-        if again.lower() != 'y':
-            print("Thank you for using the calculator!")
-            break
+            expr = self.expression.replace('^','**').replace('//','//')
+            result = None
+            if '√' in expr:
+                expr = expr.replace('√','math.sqrt(')+')'*(expr.count('√'))
+            if '!' in expr:
+                expr = self.replace_factorial(expr)
+            result = eval(expr)
+            self.entry.delete(0, tk.END)
+            self.entry.insert(tk.END, str(result))
+            self.history.append(f"{self.expression} = {result}")
+            self.expression = str(result)
+        except Exception as e:
+            messagebox.showerror("Error", f"Invalid Expression!\n{e}")
+            self.entry.delete(0, tk.END)
+            self.expression = ""
+
+    def replace_factorial(self, expr):
+        # Replace every number! with math.factorial(number)
+        while '!' in expr:
+            idx = expr.index('!')
+            # find the start of the number
+            start = idx-1
+            while start >=0 and (expr[start].isdigit() or expr[start]=='.'):
+                start -=1
+            number = expr[start+1:idx]
+            expr = expr[:start+1] + f"math.factorial(int({number}))" + expr[idx+1:]
+        return expr
+
+    def show_history(self):
+        if not self.history:
+            messagebox.showinfo("History", "No calculations yet.")
+        else:
+            messagebox.showinfo("History", "\n".join(self.history))
+
 
 if __name__ == "__main__":
-    calculator()
+    root = tk.Tk()
+    calc = Calculator(root)
+    root.mainloop()
